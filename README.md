@@ -60,7 +60,8 @@ Related work:
 
 - SafeTune: `extract_refusal_direction` / `RefusalDirectionConfig` built the per-layer refusal directions (`circuit_safetune/a_extract.py`). `RefusalDirectionModel` ran the first steering pilot (`c_steer.py`). `fit_cast_condition` and the CAST internals fitted the conditional gate (`lang_agnostic/p2_cast_fit.py`, `p2_gate2.py`). The `harden.SafeGrad` checkpoint we compare against was also made with SafeTune.
 - CircuitKIT: `ck.load_model` loads Tiny Aya Fire through CircuitKIT's TransformerLens cohere2 port. We then split the last-token projection on the refusal direction into exact per-head and per-MLP contributions, for English vs failing twins (`circuit_safetune/b_circuit.py`).
-- AuditKIT and CuratorKIT: not used. We wrote our own judge, metrics and split builder instead, because we needed paired McNemar tests and seed-level splits across four language forms.
+- AuditKIT: used by Olamide to test the model on non-Indic languages, including Yoruba. Those results are not part of the tables in this write-up. The Telugu pipeline uses our own judge, metrics and split builder, because it needed paired McNemar tests and seed-level splits across four language forms.
+- CuratorKIT: not used.
 
 How they connect:
 
@@ -243,7 +244,9 @@ None. All code and experiments were done between Nov 1 and Nov 15, 2026.
 
 ## Team
 
-- TODO: tag teammates and add author contributions.
+- Sai Kamal Nannuri: project lead; data splits, diagnosis, steering methods, evaluation pipeline and write-up.
+- Venkata Manaswitha Sunkara: CircuitKIT and SafeTune integration (refusal-direction extraction, circuit attribution, steering and CAST hooks); local Telugu dataset scan.
+- Olamide: testing on other languages such as Yoruba, and the AuditKIT evaluation.
 
 ## LLM usage statement
 
@@ -252,3 +255,4 @@ A large share of the code and of this write-up was drafted with an AI coding ass
 ## Changelog
 
 - v1 (2026-11-14): first submission.
+- v2 (2026-11-15): team and author contributions added; AuditKIT use recorded.
