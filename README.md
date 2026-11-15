@@ -1,6 +1,6 @@
-# Safety that speaks Telugu: closing the code-mixed safety gap in Tiny Aya Fire
+# Language-agnostic safety steering: one English-derived direction closes the multilingual and code-mixed safety gap in Tiny Aya Fire
 
-One-line claim: Tiny Aya Fire refuses harmful English prompts but leaks in Telugu, romanized Telugu and code-mixed text. A refusal direction taken from English and added at layers 15–18 at inference time cuts the non-English unsafe rate on held-out data from 26.1% to 16.3% (p = 7e-9), and it also transfers to 20 Indic languages it never saw.
+One-line claim: safety in Tiny Aya Fire is encoded along a direction that is shared across languages but weakened outside English. Adding back one direction, derived only from English prompts, at layers 15–18 at inference time cuts unsafe answers in 21 languages: from 26.1% to 16.3% on held-out Telugu, romanized and code-mixed prompts (p = 7e-9), and from 28.2% to 16.2% on 20 languages never used in development (p = 0.007). Telugu was the development language; the other 20 were held out.
 
 > Content warning. This write-up and the linked dataset describe harmful requests (weapons, drugs, fraud, self-harm and similar) and contain model outputs that were judged unsafe. No harmful text is quoted in this README. All child-safety content was filtered out of every file before writing.
 
@@ -26,19 +26,19 @@ One-line claim: Tiny Aya Fire refuses harmful English prompts but leaks in Telug
 
 ## Abstract
 
-Safety training is mostly done in English. Indian users write in native script, in Latin-script ("romanized") Telugu and in Telugu–English code-mix. We measured this gap on Tiny Aya Fire and then tried to close it.
+Safety training is mostly done in English, so a multilingual model can refuse a harmful request in English and answer it in another language, another script, or a code-mixed sentence. We asked whether this gap has a language-agnostic cause and a language-agnostic fix: one intervention, built without any target-language data, that works across languages. We developed on Telugu, which gives four forms of the same request (English, native script, Latin-script "romanized" Telugu and Telugu–English code-mix). We then tested on 20 other Indic languages held out from every design choice.
 
 On the same requests in four forms, the base model gives 0% unsafe answers in English but 8–25% in Telugu, romanized and mixed forms. Multi-turn jailbreaks in Telugu succeed 62.5% of the time.
 
 To find where safety fails, we compared harmful-vs-harmless directions in the residual stream. For Telugu script and code-mix, the direction is close to the English one but 2–3x weaker at layer 18. For romanized Telugu it is nearly orthogonal (cosine 0.12). CircuitKIT attribution puts most of the English-vs-Telugu loss in the MLPs of layers 15–18.
 
-The fix follows from the diagnosis: add the missing push. At layers 15–18 we add a SafeTune refusal direction, scaled to a fraction of the English signal's norm. We chose every setting on a DEV split and ran TEST and UNSEEN once. Non-English unsafe answers fell from 26.1% to 16.3%, and the gain carried over to 20 Indic languages never used in development (28.2% → 16.2%). MMLU did not drop. The price is about +5 points of over-refusal, which misses our own pre-registered limit of +3. A gated version (CAST) meets that limit but loses the safety gain.
+The fix follows from the diagnosis: since the harm signal points along the same axis in every language but is weaker outside English, add the missing push along that shared axis. At layers 15–18 we add a SafeTune refusal direction, scaled to a fraction of the English signal's norm. We chose every setting on a DEV split and ran TEST and UNSEEN once. Non-English unsafe answers fell from 26.1% to 16.3%, and the gain carried over to 20 Indic languages never used in development (28.2% → 16.2%). MMLU did not drop. The price is about +5 points of over-refusal, which misses our own pre-registered limit of +3. A gated version (CAST) meets that limit but loses the safety gain.
 
 We also report what did not work: DPO LoRA, a null-space LoRA, a closed-form weight edit, transliteration and a public SafeGrad fine-tune. An exploratory pipeline, which bridges through English by having the model translate its own input, gave the largest gain: 21.1% → 4.9% on a TEST subset.
 
 ## Problem statement and approach
 
-Why this problem: India has more than 120 million Telugu speakers. Chatbots serving public services, agriculture or health there get code-mixed and romanized input by default. An English-only safety layer leaves that whole population on the weaker path.
+Why this problem: most of the world does not talk to chatbots in English. In India alone, assistants for public services, agriculture or health get native-script, romanized and code-mixed input in 20+ languages by default, and safety-tuning data exists for very few of them. A fix that needs per-language safety data does not scale. A fix that is language-agnostic, built once from English and applied everywhere, does. Telugu (more than 120 million speakers) was our development language because it has all four input forms in one benchmark.
 
 Pre-registered hypotheses (written in `code/PLAN.md` before any run):
 - H1: an English-only harmfulness probe reaches AUROC ≥ 0.85 on every non-English form at some layer ≤ 14. Result: fail, narrowly. Romanized reached 0.91 and mixed 1.00, but Telugu script only 0.77.
@@ -277,4 +277,5 @@ A large share of the code and of this write-up was drafted with an AI coding ass
 
 - v1 (2026-11-14): first submission.
 - v2 (2026-11-15): team and author contributions added; AuditKIT use recorded.
+- v4 (2026-11-15): reframed around the language-agnostic claim (development on Telugu, held-out test on 20 languages).
 - v3 (2026-11-15): AuditKIT re-scoring of all logged runs (Finding 6), with two issues found in AuditKIT.
