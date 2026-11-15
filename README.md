@@ -60,7 +60,7 @@ Related work:
 
 - SafeTune: `extract_refusal_direction` / `RefusalDirectionConfig` built the per-layer refusal directions (`circuit_safetune/a_extract.py`). `RefusalDirectionModel` ran the first steering pilot (`c_steer.py`). `fit_cast_condition` and the CAST internals fitted the conditional gate (`lang_agnostic/p2_cast_fit.py`, `p2_gate2.py`). The `harden.SafeGrad` checkpoint we compare against was also made with SafeTune.
 - CircuitKIT: `ck.load_model` loads Tiny Aya Fire through CircuitKIT's TransformerLens cohere2 port. We then split the last-token projection on the refusal direction into exact per-head and per-MLP contributions, for English vs failing twins (`circuit_safetune/b_circuit.py`).
-- AuditKIT: used by Olamide to test the model on non-Indic languages, including Yoruba. Those results are not part of the tables in this write-up. The Telugu pipeline uses our own judge, metrics and split builder, because it needed paired McNemar tests and seed-level splits across four language forms.
+- AuditKIT: used by Olamide to test the model on non-Indic languages, including Yoruba. We also re-scored every logged Telugu/UNSEEN run with AuditKIT (`ak.evaluate` in precomputed mode with custom `@scorer`s, the built-in `RefusalDetector`, and `ak.compare(...).significance`); see Finding 6 (`lang_agnostic/audit_auditkit.py`). The main tables use our own judge pipeline, metrics and split builder, because they needed paired McNemar tests and seed-level splits across four language forms.
 - CuratorKIT: not used.
 
 How they connect:
@@ -180,6 +180,26 @@ These methods were designed after the TEST results above were known. They were r
 | xgate α=0.15 (translate only to decide; steer the original prompt) | 7.3% | 6.2% | 19 / 2 | 2e-4 | 5 / 0 (0.06) | not measured |
 | steer d_en α=0.05 (same subset) | 16.3% | 4.2% | 9 / 3 | 0.15 | 6 / 1 (0.13) | 0.592 |
 
+### Finding 6: independent re-scoring with AuditKIT
+
+We loaded each run's logged outputs into AuditKIT as precomputed samples and scored the non-English harmful items with two scorers: `safe` (IndicGuard verdict) and `ak_refusal` (AuditKIT's built-in `RefusalDetector`). Each method was then paired with base by sample id using `ak.compare`. The numbers below use the public, child-safety-filtered logs (TEST n = 455, UNSEEN n = 105).
+
+| Method | Split | Safe, base → method | AuditKIT bootstrap p | Centred bootstrap p |
+|---|---|---|---|---|
+| steer d_en α=0.05 | TEST | 73.8% → 83.5% | 0.51 | 0.0001 |
+| steer d_multi α=0.05 | TEST | 73.8% → 82.6% | 0.51 | 0.0001 |
+| CAST d_multi α=0.1 | TEST | 73.8% → 81.3% | 0.49 | 0.0001 |
+| CAST2 α=0.2 | TEST | 73.8% → 76.0% | 0.50 | 0.10 |
+| SafeGrad fine-tune | TEST | 73.8% → 72.7% | 0.59 | 0.38 |
+| steer d_en α=0.05 | UNSEEN | 74.3% → 83.8% | 0.53 | 0.021 |
+| steer d_multi α=0.05 | UNSEEN | 74.3% → 81.9% | 0.55 | 0.030 |
+| CAST d_multi α=0.1 | UNSEEN | 74.3% → 76.2% | 0.70 | 0.53 |
+| SafeGrad fine-tune | UNSEEN | 74.3% → 77.1% | 0.62 | 0.37 |
+
+Two findings about AuditKIT itself (v1.1.2), reported as feedback for the kit:
+- `paired_bootstrap` resamples the raw paired differences without centring them on zero, so the resampled means sit around the observed delta. About half of them then exceed it in absolute value, and p is about 0.5 for any effect size. Every AuditKIT p-value above is about 0.5, including a +9.7-point gain that McNemar puts at p = 7e-9. Centring the differences before resampling (last column) gives p-values in line with our McNemar tests.
+- `RefusalDetector` matches only English refusal phrases. It found 0% over-refusal for every method and the same harmful-prompt refusal rate (1.3%) for all of them, because it does not detect refusals written in Telugu or other Indic languages. A multilingual refusal detector would be needed for this kind of evaluation.
+
 ### What didn't work
 
 | Method | sub_test ASR_nonEN | Fixed / broken | p | Note |
@@ -228,6 +248,7 @@ Environment: Python 3.12, torch 2.11.0+cu128, transformers 5, peft, scikit-learn
 | `p2_dirs.py`, `p2_cast_fit.py`, `p2_gate2.py` | steering directions; CAST gates |
 | `methods.py`, `harness.py` | steering hooks; resumable generation |
 | `methods3.py`, `harness3.py`, `p3_*`, `p4_*`, `p5_*` | exploratory methods (pivot-back, xgate, LoRA, DPO, weight edit) |
+| `audit_auditkit.py` | AuditKIT re-scoring of logged runs (Finding 6) |
 | `judge.py`, `metrics.py`, `capability.py` | IndicGuard judging; metrics with CIs and McNemar; MMLU-500 |
 | `run_final.sh` | the full TEST/UNSEEN run for the main table |
 
@@ -256,3 +277,4 @@ A large share of the code and of this write-up was drafted with an AI coding ass
 
 - v1 (2026-11-14): first submission.
 - v2 (2026-11-15): team and author contributions added; AuditKIT use recorded.
+- v3 (2026-11-15): AuditKIT re-scoring of all logged runs (Finding 6), with two issues found in AuditKIT.
