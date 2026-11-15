@@ -1,6 +1,6 @@
-# Language-agnostic safety steering: one English-derived direction closes the multilingual and code-mixed safety gap in Tiny Aya Fire
+# Language-agnostic safety steering: one English-derived direction narrows the multilingual and code-mixed safety gap in Tiny Aya Fire
 
-One-line claim: safety in Tiny Aya Fire is encoded along a direction that is shared across languages but weakened outside English. Adding back one direction, derived only from English prompts, at layers 15–18 at inference time cuts unsafe answers in 21 languages: from 26.1% to 16.3% on held-out Telugu, romanized and code-mixed prompts (p = 7e-9), and from 28.2% to 16.2% on 20 languages never used in development (p = 0.007). Telugu was the development language; the other 20 were held out.
+One-line claim: safety in Tiny Aya Fire is encoded along a direction that is largely shared across languages (romanized Telugu is the exception) but weakened outside English. Adding back one direction, derived only from English prompts, at layers 15–18 at inference time cuts unsafe answers in 21 languages: from 26.1% to 16.3% on held-out Telugu, romanized and code-mixed prompts (p = 7e-9), and from 28.2% to 16.2% on 20 languages never used in development (p = 0.007). Telugu was the development language; the other 20 were held out.
 
 > Content warning. This write-up and the linked dataset describe harmful requests (weapons, drugs, fraud, self-harm and similar) and contain model outputs that were judged unsafe. No harmful text is quoted in this README. All child-safety content was filtered out of every file before writing.
 
